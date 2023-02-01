@@ -1,11 +1,17 @@
 {
   "name": "masseybuild",
   "displayName": "MasseyBuild",
-  "description": "",
+  "description": "Massey Plugin",
+  "publisher": "Massey University",
+  "repository": "https://github.com/a15x36/masseybuild",
+  "homepage": "https://github.com/a15x36/masseybuild#readme",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.74.0"
   },
+  "keywords": [
+    "Massey"
+  ],
   "categories": [
     "Other"
   ],
@@ -29,40 +35,45 @@
     "configuration": {
       "title": "Massey Build Configuration",
       "properties": {
-          "masseybuild.compiler": {
-              "type": "string",
-              "default": "g++",
-              "description": "The C++ compiler path",
-              "scope": "resource"
-          },
-          "masseybuild.ext": {
-            "type": "string",
-            "default": "",
-            "description": "The Executable Extension",
-            "scope": "resource"
-          },
-          "masseybuild.cflags": {
-            "type": "string",
-            "default": "",
-            "description": "Compiler Flags",
-            "scope": "resource"
-          },
-          "masseybuild.ldlibs": {
-            "type": "string",
-            "default": "",
-            "description": "Libraries",
-            "scope": "resource"
-          },
-          "masseybuild.args": {
-            "type": "string",
-            "default": "",
-            "description": "Arguments",
-            "scope": "resource"
-          }
+        "masseybuild.compiler": {
+          "type": "string",
+          "default": "g++",
+          "description": "C++ compiler path",
+          "scope": "resource"
+        },
+        "masseybuild.ext": {
+          "type": "string",
+          "default": "",
+          "description": "Output Extension",
+          "scope": "resource"
+        },
+        "masseybuild.cflags": {
+          "type": "string",
+          "default": "",
+          "description": "Compiler Flags",
+          "scope": "resource"
+        },
+        "masseybuild.ldlibs": {
+          "type": "string",
+          "default": "",
+          "description": "Libraries",
+          "scope": "resource"
+        },
+        "masseybuild.args": {
+          "type": "string",
+          "default": "",
+          "description": "Arguments",
+          "scope": "resource"
+        },
+        "masseybuild.make": {
+          "type": "string",
+          "default": "make",
+          "description": "Make Command",
+          "scope": "resource"
         }
       }
+    }
   },
-  
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
@@ -86,6 +97,7 @@
   },
   "dependencies": {
     "find-process": "^1.4.7",
-    "lookpath": "^1.2.2"
+    "lookpath": "^1.2.2",
+    "yo": "^4.3.1"
   }
 }

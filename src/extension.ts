@@ -1,21 +1,21 @@
 import * as vscode from 'vscode';
 import * as child_process from 'child_process';
 import { parse, join, ParsedPath } from 'path';
-//let buildCommand: vscode.Disposable;
-//let runCommand: vscode.Disposable;
-//let buildAndRunCommand: vscode.Disposable;
-import find = require("find-process");
-import { lookpath } from "lookpath";
-import * as fs from 'fs';
 
+//import find = require("find-process");
+//import { lookpath } from "lookpath";
+import * as fs from 'fs';
 
 let outputChannel=vscode.window.createOutputChannel("Massey Build");
 let terminal=vscode.window.createTerminal("Massey Build");
 
+let lastwindow=undefined;
+/*
 export async function isProccessRunning(proccess: string): Promise<boolean> {
     const list = await find("name", proccess, true);
     return list.length > 0;
 }
+*/
 export function activate(context: vscode.ExtensionContext) {
     // Register the "Build" command
     let buildCommand = vscode.commands.registerCommand('masseybuild.build', build);
@@ -24,10 +24,6 @@ export function activate(context: vscode.ExtensionContext) {
     // Register the "Run" command
     let runCommand = vscode.commands.registerCommand('masseybuild.run', run);
     context.subscriptions.push(runCommand);
-
-//    // Register the "Build and Run" command
-//    let buildAndRunCommand = vscode.commands.registerCommand('masseybuild.buildAndRun', buildAndRun);
-//    context.subscriptions.push(buildAndRunCommand);
 
     // Create "Build" item in the status bar
     let buildItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
@@ -43,43 +39,95 @@ export function activate(context: vscode.ExtensionContext) {
     runItem.tooltip = 'Run';
     runItem.show();
 
-    // Create "Build and Run" item in the status bar
-    /*
-    let buildAndRunItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 80);
-    buildAndRunItem.text = 'Build and Run';
-    buildAndRunItem.command = 'masseybuild.buildAndRun';
-    buildAndRunItem.show();
-    */
-
     context.subscriptions.push(buildItem);
-    context.subscriptions.push(runItem);
-   // context.subscriptions.push(buildAndRunItem);
-	
+    context.subscriptions.push(runItem);	
 }
 
 function escdq(s: string) {
     return s.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 }
+// Get extention of target executable
+function getExtension() {
+    // Get Extension
+    let ext = vscode.workspace.getConfiguration("masseybuild").get<string>("ext");
+    // Default Windows Extension
+    if((ext !== undefined) && ext !== "") {
+      return "." + ext;
+    } else if(process.platform === "win32") {
+      return ".exe";
+    }
+    return "";
+  }
 
-function compileSingleFile(fileName: string, run: boolean) {
+// Get single-file target
+function getCompileTarget(lang: string | undefined, info: ParsedPath) {
+    console.log("getCompileTarget");
+    if(lang==="c" || lang==="cpp") {
+      // Get Target Name
+      return info.name + getExtension();
+    }
+}
+function getMakeTarget(info: ParsedPath) {
+    // Get Make Command
+    let content=fs.readFileSync(join(info.dir, info.base),'utf8');
+    // Get Makefile goals
+    let matches = [...content.matchAll(/([A-Za-z0-9]+)([ \t]*):([ \t]*)([A-Za-z0-9_]*)/g)];
+    // Return first goal
+    return matches[0][matches[0].length-1];
+}
+function getBuildType(lang: string | undefined, info: ParsedPath) {
+    if(fs.existsSync(join(info.dir, "makefile")) ||
+      fs.existsSync(join(info.dir, "Makefile")) ||
+      (lang==="makefile") ) {
+        return "Makefile";
+      }
+    return "Single";
+}
+// Get build target (single-file or Makefile)
+function getBuildTarget(lang: string | undefined, info: ParsedPath) {
+    console.log("getBuildTarget");
+
+    // Check Grammar
+    if(lang==="cpp" || lang==="c") {
+      // Check if a Makefile exists in the directory
+      if(fs.existsSync(join(info.dir, "makefile"))) {
+        // Use Makefile
+        info.base = "makefile";
+        // Get Make Target
+        return getMakeTarget(info);
+      } else if(fs.existsSync(join(info.dir, "Makefile"))) {
+        // Use Makefile
+        info.base = "Makefile";
+        // Get Make Target
+        return getMakeTarget(info);
+      } else {
+        // Get Compile Target
+        return getCompileTarget(lang, info);
+      }
+    } else if(lang==="makefile") {
+      // Get Make Target
+      return getMakeTarget(info);
+    }
+  }
+
+function buildAndRun(fileName: string, run: boolean) {
     let info=parse(fileName);
     // Get Compiler
     let config = vscode.workspace.getConfiguration("masseybuild");
     let compiler = config.get<string>("compiler");
 
     let lang=vscode.window.activeTextEditor?.document.languageId;
-    // Get Extension
-    let ext = config.get<string>("ext");
+    let buildtype = getBuildType(lang,info);
 
     // Get Target
-    let executable = info.name;
-    if(ext!=="") {
-        executable=executable+"."+ext;
-    }
+    let executable = getBuildTarget(lang,info);
+
     vscode.window.showInformationMessage("Compiling:"+executable+" in "+info.dir);
 
     // Get Flags
     let cflags = config.get<string>("cflags");
+
+    // Get library flags
     let ldlibs = config.get<string>("ldlibs");
 
     // Get Args
@@ -88,74 +136,39 @@ function compileSingleFile(fileName: string, run: boolean) {
     // Generate Compile Command
     let buildcmd = `\"${compiler}\" ${cflags} \"${info.base}\" -o \"${executable}\" ${ldlibs}`;
 
-    if(lang==="makefile") {
-        buildcmd = "make";
+    if(buildtype==="Makefile") {
+        let make=config.get<string>("make");
+        if(make===undefined) {
+            make="make";
+        }
+        buildcmd = make;
     }
-
-    // Notify that compiling is starting
-   // atom.notifications.addInfo('Compiling...', { detail: buildcmd })
-    
- //   try {
-      // Execute Compile Command
-   //   outputChannel.appendLine(buildcmd);
-   //   outputChannel.show();
-   //   let compilerArgs=[`\"${info.base}\"`,"-o",`\"${executable}\"`];
-
-    //  if (cflags!=="" && cflags!==undefined) {
-    //    compilerArgs.concat(cflags.split(" "));
-    //  }
-    //  const output = child_process.spawnSync(`"${compiler}"`, compilerArgs, { cwd: info.dir, shell: true, encoding: "utf-8" });
     const output = child_process.spawnSync(buildcmd, { cwd: info.dir, shell: true, encoding: "utf-8" });
- //     let output = child_process.execSync(buildcmd, { cwd: info.dir });
 
-        if(output.output.length>0) {
-            outputChannel.appendLine(output.output.toString());
-            outputChannel.show();
-        }
-       // vscode.window.showInformationMessage(output.toString());
-
-       // if (output.output.length>0) {
-       //     
-       //     op.appendLine(output.toString());
-       //     op.show();
-       // }
-
-      // Notify Build Success
-      //atom.notifications.addSuccess("Build Success");
-      /*
-    } catch(error) {
-      // Notify Build Error
-      vscode.window.showInformationMessage("Error Compiling:"+buildcmd);
-      
-      // Build Failed
-      return false;
+    if(output.output.length>0) {
+        let op=output.output;
+        outputChannel.appendLine(op.join(""));
+//        outputChannel.show();
     }
-    */
+    
     if(run && !output.status) {
-        if(lang==="makefile") {
-            executable=getMakeTarget(fileName);
-        }
-        // Check Platform
+        
         let cmd = `${info.dir}/${executable}`;
+        // Check Platform
         if(process.platform === "win32") {
             // Windows - Run Command
             let cmd = `start \"${executable}\" cmd /c \"\"${executable}\" ${args} & pause\"`;
         } else if(process.platform === "linux") {
   
         } else if(process.platform === "darwin") {
-        // Mac OS X - Run Command
+            // Mac OS X - Run Command
             let cmd = "osascript -e \'tell application \"Terminal\" to activate do script \"" +
               escdq(`clear && cd \"${info.dir}\"; \"./${executable}\" ${args}; ` +
               'read -n1 -p "" && osascript -e "tell application \\"Atom\\" to activate" && osascript -e "do shell script ' +
               escdq(`\"osascript -e ${escdq('"tell application \\"Terminal\\" to close windows 0"')} + &> /dev/null &\"`) +
               '"; exit') + '"\'';
         }
-    //  outputChannel.appendLine("running "+cmd+" "+info.dir); 
-    //  outputChannel.show();
-   //   const output = child_process.spawnSync(cmd, [], { cwd: info.dir, shell: true, encoding: "utf-8" });
-   //   output_channel.appendLine(output.output.toString());
-   //   output_channel.show();
-      terminal.show();
+      //terminal.show();
       terminal.sendText(cmd);
       terminal.show();
 /*
@@ -163,19 +176,14 @@ function compileSingleFile(fileName: string, run: boolean) {
             // Do Nothing?
           });
           */
+    } else {
+        outputChannel.show();
     }
     // Build Succeeded
     return true;
   }
 
-function getMakeTarget(filename:string) {
-    // Get Make Command
-    let content=fs.readFileSync(filename,'utf8');
-    // Get Makefile goals
-    let matches = [...content.matchAll(/([A-Za-z0-9]+)([ \t]*):([ \t]*)([A-Za-z0-9_]*)/g)];
-    // Return first goal
-    return matches[0][matches[0].length-1];
-}
+
 function saveAndCompile(run:boolean) {
     // Compile the C++ source file using g++
     let editor = vscode.window.activeTextEditor;
@@ -189,7 +197,7 @@ function saveAndCompile(run:boolean) {
     if (editor.document.languageId==="cpp" || editor.document.languageId==="makefile") {// fileName.endsWith('.cpp')) {
         Promise.resolve(editor.document.isDirty?editor.document.save():null)
         .then(() => {
-            compileSingleFile(fileName,run);
+            buildAndRun(fileName,run);
         });
     } else {
       vscode.window.showErrorMessage("Not a C++ file.");

@@ -1,21 +1,11 @@
 import * as vscode from 'vscode';
 import * as child_process from 'child_process';
-import { parse, join, ParsedPath } from 'path';
-
-//import find = require("find-process");
-//import { lookpath } from "lookpath";
+import * as path from 'path';
 import * as fs from 'fs';
 
 let outputChannel=vscode.window.createOutputChannel("Massey Build");
 let terminal=vscode.window.createTerminal("Massey Build");
 
-let lastwindow=undefined;
-/*
-export async function isProccessRunning(proccess: string): Promise<boolean> {
-    const list = await find("name", proccess, true);
-    return list.length > 0;
-}
-*/
 export function activate(context: vscode.ExtensionContext) {
     // Register the "Build" command
     let buildCommand = vscode.commands.registerCommand('masseybuild.build', build);
@@ -60,42 +50,42 @@ function getExtension() {
   }
 
 // Get single-file target
-function getCompileTarget(lang: string | undefined, info: ParsedPath) {
-    console.log("getCompileTarget");
+function getCompileTarget(lang: string | undefined, info: path.ParsedPath) {
+    //console.log("getCompileTarget");
     if(lang==="c" || lang==="cpp") {
       // Get Target Name
       return info.name + getExtension();
     }
 }
-function getMakeTarget(info: ParsedPath) {
+function getMakeTarget(info: path.ParsedPath) {
     // Get Make Command
-    let content=fs.readFileSync(join(info.dir, info.base),'utf8');
+    let content=fs.readFileSync(path.join(info.dir, info.base),'utf8');
     // Get Makefile goals
     let matches = [...content.matchAll(/([A-Za-z0-9]+)([ \t]*):([ \t]*)([A-Za-z0-9_]*)/g)];
     // Return first goal
     return matches[0][matches[0].length-1];
 }
-function getBuildType(lang: string | undefined, info: ParsedPath) {
-    if(fs.existsSync(join(info.dir, "makefile")) ||
-      fs.existsSync(join(info.dir, "Makefile")) ||
+function getBuildType(lang: string | undefined, info: path.ParsedPath) {
+    if(fs.existsSync(path.join(info.dir, "makefile")) ||
+      fs.existsSync(path.join(info.dir, "Makefile")) ||
       (lang==="makefile") ) {
         return "Makefile";
-      }
+    }
     return "Single";
 }
 // Get build target (single-file or Makefile)
-function getBuildTarget(lang: string | undefined, info: ParsedPath) {
-    console.log("getBuildTarget");
+function getBuildTarget(lang: string | undefined, info: path.ParsedPath) {
+    //console.log("getBuildTarget");
 
     // Check Grammar
     if(lang==="cpp" || lang==="c") {
       // Check if a Makefile exists in the directory
-      if(fs.existsSync(join(info.dir, "makefile"))) {
+      if(fs.existsSync(path.join(info.dir, "makefile"))) {
         // Use Makefile
         info.base = "makefile";
         // Get Make Target
         return getMakeTarget(info);
-      } else if(fs.existsSync(join(info.dir, "Makefile"))) {
+      } else if(fs.existsSync(path.join(info.dir, "Makefile"))) {
         // Use Makefile
         info.base = "Makefile";
         // Get Make Target
@@ -111,7 +101,7 @@ function getBuildTarget(lang: string | undefined, info: ParsedPath) {
   }
 
 function buildAndRun(fileName: string, run: boolean) {
-    let info=parse(fileName);
+    let info=path.parse(fileName);
     // Get Compiler
     let config = vscode.workspace.getConfiguration("masseybuild");
     let compiler = config.get<string>("compiler");
@@ -131,9 +121,6 @@ function buildAndRun(fileName: string, run: boolean) {
     // Get library flags
     let ldlibs = config.get<string>("ldlibs");
 
-    // Get Args
-    let args = config.get<string>("args");
-
     // Generate Compile Command
     let buildcmd = `\"${compiler}\" ${cflags} \"${info.base}\" -o \"${executable}\" ${ldlibs}`;
 
@@ -147,7 +134,6 @@ function buildAndRun(fileName: string, run: boolean) {
     outputChannel.clear();
     outputChannel.appendLine(buildcmd);
     const output = child_process.spawnSync(buildcmd, { cwd: info.dir, shell: true, encoding: "utf-8" });
-
     
     if(output.output.length>0) {
         let op=output.output;
@@ -158,7 +144,12 @@ function buildAndRun(fileName: string, run: boolean) {
     
     if(run && !output.status) {
         
-        let cmd = `${info.dir}/${executable}`;
+        // Get Args
+        let args = config.get<string>("args");
+        if(args===undefined) {
+            args="";
+        }
+        let cmd = info.dir+path.sep+executable+" "+args;
         /*
         // Check Platform
         if(process.platform === "win32") {

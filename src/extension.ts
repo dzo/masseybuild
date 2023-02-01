@@ -116,7 +116,8 @@ function buildAndRun(fileName: string, run: boolean) {
     let config = vscode.workspace.getConfiguration("masseybuild");
     let compiler = config.get<string>("compiler");
 
-    let lang=vscode.window.activeTextEditor?.document.languageId;
+    let editor=vscode.window.activeTextEditor;
+    let lang=editor?.document.languageId;
     let buildtype = getBuildType(lang,info);
 
     // Get Target
@@ -143,17 +144,22 @@ function buildAndRun(fileName: string, run: boolean) {
         }
         buildcmd = make;
     }
+    outputChannel.clear();
+    outputChannel.appendLine(buildcmd);
     const output = child_process.spawnSync(buildcmd, { cwd: info.dir, shell: true, encoding: "utf-8" });
 
+    
     if(output.output.length>0) {
         let op=output.output;
         outputChannel.appendLine(op.join(""));
-//        outputChannel.show();
+       // outputChannel.show();
+       outputChannel.show(true);
     }
     
     if(run && !output.status) {
         
         let cmd = `${info.dir}/${executable}`;
+        /*
         // Check Platform
         if(process.platform === "win32") {
             // Windows - Run Command
@@ -168,17 +174,12 @@ function buildAndRun(fileName: string, run: boolean) {
               escdq(`\"osascript -e ${escdq('"tell application \\"Terminal\\" to close windows 0"')} + &> /dev/null &\"`) +
               '"; exit') + '"\'';
         }
-      //terminal.show();
+        */
       terminal.sendText(cmd);
-      terminal.show();
-/*
-        child_process.exec(cmd, {cwd: info.dir}, (error, stdout, stderr) => {
-            // Do Nothing?
-          });
-          */
-    } else {
-        outputChannel.show();
-    }
+      terminal.show(true);
+
+
+    } 
     // Build Succeeded
     return true;
   }

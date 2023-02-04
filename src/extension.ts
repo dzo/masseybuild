@@ -5,6 +5,7 @@ import * as fs from 'fs';
 
 let outputChannel=vscode.window.createOutputChannel("Massey Build");
 let terminal=vscode.window.createTerminal("Massey Build");
+let compileprocess:child_process.ChildProcessWithoutNullStreams;
 
 export function activate(context: vscode.ExtensionContext) {
     // Register the "Build" command
@@ -113,7 +114,7 @@ function buildAndRun(fileName: string, run: boolean) {
     // Get Target
     let executable = getBuildTarget(lang,info);
 
-    vscode.window.showInformationMessage("Compiling:"+executable+" in "+info.dir);
+    vscode.window.showInformationMessage("Compiling:"+executable);
 
     // Get Flags
     let cflags = config.get<string>("cflags");
@@ -122,7 +123,7 @@ function buildAndRun(fileName: string, run: boolean) {
     let ldlibs = config.get<string>("ldlibs");
 
     // Generate Compile Command
-    let buildcmd = `\"${compiler}\" ${cflags} \"${info.base}\" -o \"${executable}\" ${ldlibs}`;
+    let buildcmd = `\"${compiler}\" ${cflags} \"${fileName}\" -o \"${executable}\" ${ldlibs}`;
 
     if(buildtype==="Makefile") {
         let make=config.get<string>("make");
@@ -133,45 +134,39 @@ function buildAndRun(fileName: string, run: boolean) {
     }
     outputChannel.clear();
     outputChannel.appendLine(buildcmd);
-    const output = child_process.spawnSync(buildcmd, { cwd: info.dir, shell: true, encoding: "utf-8" });
+    compileprocess = child_process.spawn(buildcmd,[], { cwd: info.dir, shell: true });
+
+    compileprocess.stdout.on('data', (data) => {
+        outputChannel.append(data.toString());
+        outputChannel.show(true);
+    });
     
-    if(output.output.length>0) {
-        let op=output.output;
-        outputChannel.appendLine(op.join(""));
-       // outputChannel.show();
-       outputChannel.show(true);
-    }
+    compileprocess.stderr.on('data', (data) => {
+        outputChannel.append(data.toString());
+        outputChannel.show(true);
+    });
     
-    if(run && !output.status) {
-        
-        // Get Args
-        let args = config.get<string>("args");
-        if(args===undefined) {
-            args="";
+    compileprocess.on('close', (code) => {
+        if(code) {
+            outputChannel.appendLine("Build Failed");
+        } else {
+            outputChannel.appendLine("Success");
         }
-        let cmd = info.dir+path.sep+executable+" "+args;
-        /*
-        // Check Platform
-        if(process.platform === "win32") {
-            // Windows - Run Command
-            let cmd = `start \"${executable}\" cmd /c \"\"${executable}\" ${args} & pause\"`;
-        } else if(process.platform === "linux") {
-  
-        } else if(process.platform === "darwin") {
-            // Mac OS X - Run Command
-            let cmd = "osascript -e \'tell application \"Terminal\" to activate do script \"" +
-              escdq(`clear && cd \"${info.dir}\"; \"./${executable}\" ${args}; ` +
-              'read -n1 -p "" && osascript -e "tell application \\"Atom\\" to activate" && osascript -e "do shell script ' +
-              escdq(`\"osascript -e ${escdq('"tell application \\"Terminal\\" to close windows 0"')} + &> /dev/null &\"`) +
-              '"; exit') + '"\'';
+        outputChannel.show(true);
+        if(run && !code) {
+            // Get Args
+            let args = config.get<string>("args");
+            if(args===undefined) {
+                args="";
+            }
+            let cmd = info.dir+path.sep+executable+" "+args;
+            terminal.sendText(cmd);
+            terminal.show(true);
         }
-        */
-      terminal.sendText(cmd);
-      terminal.show(true);
+    });
 
 
-    } 
-    // Build Succeeded
+    
     return true;
   }
 

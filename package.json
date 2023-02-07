@@ -32,6 +32,29 @@
         "title": "Run"
       }
     ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "masseybuild",
+          "title": "Massey Build",
+          "icon": "assets/icons/massey_logo.svg"
+        }
+      ]
+    },
+    "views": {
+      "masseybuild": [
+        {
+          "id": "masseybuild",
+          "name": "Massey Build"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "masseybuild",
+        "contents": "[Build](command:masseybuild.build)\n[Build and Run](command:masseybuild.run)"        
+      }
+    ],
     "configuration": {
       "title": "Massey Build Configuration",
       "properties": {

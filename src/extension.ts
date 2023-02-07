@@ -160,8 +160,8 @@ function buildAndRun(fileName: string, run: boolean) {
                 args="";
             }
             let cmd = info.dir+path.sep+executable+" "+args;
+			terminal.show(false);
             terminal.sendText(cmd);
-            terminal.show(true);
         }
     });
 
@@ -181,13 +181,14 @@ function saveAndCompile(run:boolean) {
 
     let fileName = editor.document.fileName;
     
-    if (editor.document.languageId==="cpp" || editor.document.languageId==="makefile") {// fileName.endsWith('.cpp')) {
+    if (editor.document.languageId==="cpp" || editor.document.languageId==="c" || 
+		editor.document.languageId==="makefile") {
         Promise.resolve(editor.document.isDirty?editor.document.save():null)
         .then(() => {
             buildAndRun(fileName,run);
         });
     } else {
-      vscode.window.showErrorMessage("Not a C++ file.");
+      vscode.window.showErrorMessage("Not a C/C++ file.");
     }
 }
 

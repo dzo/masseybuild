@@ -2,10 +2,11 @@
   "name": "masseybuild",
   "displayName": "MasseyBuild",
   "description": "Massey Plugin",
-  "publisher": "Massey University",
-  "repository": "https://github.com/a15x36/masseybuild",
-  "homepage": "https://github.com/a15x36/masseybuild#readme",
-  "version": "0.0.1",
+  "publisher": "MasseyCS",
+  "repository": "https://github.com/dzo/masseybuild",
+  "homepage": "https://github.com/dzo/masseybuild#readme",
+  "icon": "assets/icons/massey.png",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -52,7 +53,7 @@
     "viewsWelcome": [
       {
         "view": "masseybuild",
-        "contents": "[Build](command:masseybuild.build)\n[Build and Run](command:masseybuild.run)"        
+        "contents": "[Build](command:masseybuild.build)\n[Build and Run](command:masseybuild.run)"
       }
     ],
     "configuration": {
@@ -117,10 +118,5 @@
     "glob": "^8.0.3",
     "mocha": "^10.1.0",
     "typescript": "^4.9.3"
-  },
-  "dependencies": {
-    "find-process": "^1.4.7",
-    "lookpath": "^1.2.2",
-    "yo": "^4.3.1"
   }
 }

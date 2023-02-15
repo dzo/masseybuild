@@ -159,7 +159,7 @@ function buildAndRun(fileName: string, run: boolean) {
             if(args===undefined) {
                 args="";
             }
-            let cmd = info.dir+path.sep+executable+" "+args;
+            let cmd = `\"${info.dir}${path.sep}${executable}\" ${args}`;
 			terminal.show(false);
             terminal.sendText(cmd);
         }

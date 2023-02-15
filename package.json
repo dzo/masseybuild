@@ -6,7 +6,7 @@
   "repository": "https://github.com/dzo/masseybuild",
   "homepage": "https://github.com/dzo/masseybuild#readme",
   "icon": "assets/icons/massey.png",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "engines": {
     "vscode": "^1.74.0"
   },

@@ -14,5 +14,5 @@ A simple extension to build/run C/C++ files from VSCode.
 
 This package has been written in TypeScript but took significant elements from:
 
-* [DanielPlayne/massey-build]
+* [DanielPlayne/massey-build](https://github.com/DanielPlayne/massey-build)
 * [tomlau10/gcc-make-run](https://atom.io/packages/gpp-compiler)

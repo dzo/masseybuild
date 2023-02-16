@@ -32,6 +32,11 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(buildItem);
     context.subscriptions.push(runItem);	
+    context.subscriptions.push(vscode.window.onDidCloseTerminal(closedTerminal => {
+      if (closedTerminal === terminal) {
+        terminal=vscode.window.createTerminal("Massey Build");
+      }
+    }));
 }
 
 function escdq(s: string) {
@@ -160,7 +165,7 @@ function buildAndRun(fileName: string, run: boolean) {
                 args="";
             }
             let cmd = `\"${info.dir}${path.sep}${executable}\" ${args}`;
-			terminal.show(false);
+            terminal.show(false);
             terminal.sendText(cmd);
         }
     });

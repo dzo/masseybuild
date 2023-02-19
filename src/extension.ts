@@ -165,6 +165,11 @@ function buildAndRun(fileName: string, run: boolean) {
                 args="";
             }
             let cmd = `\"${info.dir}${path.sep}${executable}\" ${args}`;
+            if (process.platform==='win32' &&
+                  ( vscode.env.shell.indexOf("pwsh.exe") > 0 || 
+                  vscode.env.shell.indexOf("PowerShell") > 0)) {
+                   cmd = `&${cmd}`;
+            }
             terminal.show(false);
             terminal.sendText(cmd);
         }

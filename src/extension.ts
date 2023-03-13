@@ -119,7 +119,7 @@ function buildAndRun(fileName: string, run: boolean) {
     // Get Target
     let executable = getBuildTarget(lang,info);
 
-    vscode.window.showInformationMessage("Compiling:"+executable);
+    //vscode.window.showInformationMessage("Compiling:"+executable);
 
     // Get Flags
     let cflags = config.get<string>("cflags");

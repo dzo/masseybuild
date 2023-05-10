@@ -172,6 +172,7 @@ function buildAndRun(fileName: string, run: boolean) {
             }
             terminal.show(false);
             terminal.sendText(cmd);
+            terminal.show(false);
         }
     });
 
